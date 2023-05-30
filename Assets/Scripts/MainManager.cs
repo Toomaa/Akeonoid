@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -10,15 +11,19 @@ public class MainManager : MonoBehaviour
     public int LineCount = 6;
     public Rigidbody Ball;
 
-    public Text ScoreText;
-    public GameObject GameOverText;
+    public TextMeshProUGUI ScoreText;
+    public TextMeshProUGUI HighScoreText;
+    public TextMeshProUGUI GameOverText;
     
     private bool m_Started = false;
     private int m_Points;
     
     private bool m_GameOver = false;
 
-    
+    private const string GAME_OVER_HIGH_SCORE = "GAME OVER\nHigh Score Achieved!\n\n<size=75%>Press SPACE to enter the Hall of Fame</size>";
+    private const string GAME_OVER_RESTART = "GAME OVER\n\n<size=75%>Press SPACE to restart</size>";
+
+
     // Start is called before the first frame update
     void Start()
     {
@@ -36,6 +41,12 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+
+        // display the highest score
+        HighScoreText.text = "Best Score: " + DataManager.Instance.GetHighestScore();
+
+        // disable the game over text
+        GameOverText.gameObject.SetActive(false);
     }
 
     private void Update()
@@ -57,7 +68,20 @@ public class MainManager : MonoBehaviour
         {
             if (Input.GetKeyDown(KeyCode.Space))
             {
-                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                // enough points achieved, 
+                if (DataManager.Instance.QualifiesForHighScore(m_Points))
+                {
+                    // insert/ update a high score record
+                    DataManager.Instance.InsertHighScore(m_Points);
+
+                    // go to the high scores menu
+                    SceneManager.LoadScene(1);
+                }
+                // restart the level
+                else
+                {
+                    SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                }                
             }
         }
     }
@@ -71,6 +95,11 @@ public class MainManager : MonoBehaviour
     public void GameOver()
     {
         m_GameOver = true;
-        GameOverText.SetActive(true);
+
+        // show the appropriate game over text
+        GameOverText.text = DataManager.Instance.QualifiesForHighScore(m_Points) ?
+            GAME_OVER_HIGH_SCORE : GAME_OVER_RESTART;
+        
+        GameOverText.gameObject.SetActive(true);
     }
 }
